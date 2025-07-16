@@ -1,6 +1,9 @@
 const express = require('express')
 require('dotenv').config()
 
+const path= require('path')
+const morganMiddleware = require('./middlewares/logMiddleware');
+const logger = require('./utils/loggers');
 const cookieParser = require('cookie-parser')
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -21,6 +24,7 @@ const app = express()
 // Middleware
 app.use(helmet());
 app.use(express.json())
+app.use(morganMiddleware); // ✅ log every request
 
 // Rate limiter
 const limiter = rateLimit({
@@ -33,11 +37,16 @@ const limiter = rateLimit({
 
 app.use(limiter);
 
-
+app.use(express.urlencoded({ extended: true }))
+app.use(express.json());
 app.use(cookieParser());
 
+// Static serving of uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-app.use("/users",userRoutes);
+
+
+app.use("/api/users",userRoutes);
 
 
 
