@@ -13,7 +13,10 @@ const httpStatusText = require('./utils/httpStatusText')
 const appError = require('./utils/appError.js')
 
 
-const userRoutes = require('./routes/user.routes.js')
+const userRoutes = require('./routes/user.routes.js');
+const audioRoutes = require('./routes/audio.routes');
+const adminRoutes = require('./routes/admin.routes');
+const morgan = require('morgan');
 
 
 
@@ -24,7 +27,37 @@ const app = express()
 // Middleware
 app.use(helmet());
 app.use(express.json())
-app.use(morganMiddleware); // ✅ log every request
+
+// app.use(morgan('combined')); // ✅    
+app.use(morgan('dev')); // ✅  
+app.use(morganMiddleware); // ✅ logs
+
+
+logger.info('Starting app...');
+logger.warn('Low disk space');
+logger.error('Something went wrong');
+
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection:', reason);
+});
+
+
+process.on('uncaughtException', (err) => {
+  logger.error('Uncaught Exception:', err);
+  process.exit(1);  
+});
+
+
+// Sample route
+app.get('/', (req, res) => {
+  // logger.info('GET / route hit');
+  res.send('Welcome to the Library App');
+});
+
+app.get('/fail', (req, res) => {
+  throw new Error('💥 Crash route hit!');
+});
+
 
 // Rate limiter
 const limiter = rateLimit({
@@ -46,7 +79,14 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
 
-app.use("/api/users",userRoutes);
+app.use("/api/auth",userRoutes);
+
+// app.use("/api/profile", require("./routes/profileRoutes"));
+
+app.use("/api/audio", audioRoutes);
+
+app.use("/api/admin",adminRoutes );
+
 
 
 
