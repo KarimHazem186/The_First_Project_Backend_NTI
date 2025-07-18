@@ -64,9 +64,9 @@ A backend RESTful API for an **Audio Library Sharing App**, built with **Node.js
 ## 🗂️ Project Structure
 
 audio-library-app/
----
+--
 ├── config/ # DB and multerc onfiguration
----
+--
 ├── controllers/ # Route handler logic
 ---
 ├── middlewares/ # Auth, validators, error handling
