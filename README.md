@@ -64,31 +64,31 @@ A backend RESTful API for an **Audio Library Sharing App**, built with **Node.js
 ## 🗂️ Project Structure
 
 audio-library-app/
---
+-
 ├── config/ # DB and multerc onfiguration
---
+-
 ├── controllers/ # Route handler logic
----
+-
 ├── middlewares/ # Auth, validators, error handling
----
+-
 ├── models/ # Mongoose schemas
----
+-
 ├── routes/ # All route files
----
+-
 ├── uploads/ # Auto-created folders for audio, covers, profiles
----
+-
 │ └── audio/user_<userId>/
----
+-
 │ └── covers/user_<userId>/
----
+-
 │ └── profiles/user_<userId>/
----
+-
 ├── .env # Env variables (PORT, DB, JWT_SECRET)
----
+-
 ├── app.js # App config
----
+-
 ├── server.js # App entry point
----
+-
 
 
 ## 🧪 Testing (Postman)
