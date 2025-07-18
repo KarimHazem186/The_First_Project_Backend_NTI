@@ -21,7 +21,12 @@ const validateRegister = ()=>{
       
       .matches(/^[a-zA-Z\s]+$/).withMessage('Name can only contain letters and spaces')
       
-      .customSanitizer(value => value.trim().toLowerCase().replace(/\s+/g, '_'))
+      .customSanitizer(value => {
+        if (typeof value !== 'string') return value;
+        return value.trim().toLowerCase().replace(/\s+/g, '_');
+      })
+
+      // .customSanitizer(value => value.trim().toLowerCase().replace(/\s+/g, '_'))
       
       .customSanitizer(value => {
         const clean = value.replace(/[^a-zA-Z\s]/g, '').trim()
@@ -33,9 +38,13 @@ const validateRegister = ()=>{
 
 
     body('email')
-      .notEmpty().withMessage('Email is required')
+      .notEmpty().escape().withMessage('Email is required')
       .isEmail().withMessage('Invalid email address')
-      .customSanitizer(value => value.toLowerCase().trim())
+      // .customSanitizer(value => value.toLowerCase().trim())
+      .customSanitizer(value => {
+        if (typeof value !== 'string') return value;
+        return value.trim();
+      })
       .normalizeEmail()
       // .trim()
       .custom(async (value) => {
@@ -50,11 +59,16 @@ const validateRegister = ()=>{
 
       // Password
     body('password')
-      .notEmpty().withMessage('Password is required')
+      .notEmpty().escape().withMessage('Password is required')
       .isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
       
-      .customSanitizer(value => value.trim())
+      // .customSanitizer(value => value.trim())
       
+      .customSanitizer(value => {
+        if (typeof value !== 'string') return value;
+        return value.trim();
+      })
+
       .matches(/(?=.*[0-9])(?=.*[!@#$%^&*])/).withMessage('Password must contain a number and a special character')
 
       
@@ -66,22 +80,10 @@ const validateRegister = ()=>{
       }),
 
     body('role')
+      .optional()
       .customSanitizer(value => value.trim().toLowerCase())
       .isIn([userRoles.ADMIN, userRoles.USER]).withMessage('Invalid role'),
-    
-
-//    body('profileImg')
-//     .notEmpty().withMessage('Profile image is required')
-//     .customSanitizer(value => value.trim())
-//     .custom(value => {
-//       const isUrl = /^(https?:\/\/)[\w.-]+\.[\w]{2,}(\/[\w.-]*)*\.(jpg|jpeg|png|gif|webp)$/i.test(value);
-//       const isFilename = /^[\w,\s-]+\.(jpg|jpeg|png|gif|webp)$/i.test(value);
-//       if (!isUrl && !isFilename) {
-//         throw appError.create('Profile image must be a valid image URL or file name (jpg, png, etc.)',400,'fail');
-//       }
-//       return true;
-//     })
-  
+      
     ];
 }
 
