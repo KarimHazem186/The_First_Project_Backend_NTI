@@ -1,5 +1,9 @@
 // global Error handler delete id not found
+const logger = require('../utils/loggers');
+const httpStatusText = require('../utils/httpStatusText')
 module.exports=((error,req,res,next)=>{
+    logger.error(error.message, { stack: error.stack });
+    // logger.error(`❌ ${error.message}`, { stack: error.stack });
     res.status(error.statusCode||500).json({
         status:error.statusText ||
         httpStatusText.ERROR || 'error' ,
@@ -12,12 +16,5 @@ module.exports=((error,req,res,next)=>{
 
 
 
-
-// module.exports = (err, req, res, next) => {
-//   console.error(err.stack);
-//   res.status(500).json({
-//     error: 'Internal Server Error'
-//   });
-// };
 
 
