@@ -141,6 +141,6 @@ audio-library-app/
 ## 📌 How to Run
 
 ```bash
-git clone https://github.com/your-username/audio-library-app.git
-cd audio-library-app
+git clone https://github.com/your-username/The_First_Project_Backend_NTI.git
+cd The_First_Project_Backend_NTI
 npm install
