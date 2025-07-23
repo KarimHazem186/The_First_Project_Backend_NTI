@@ -5,7 +5,7 @@ const {generateRefreshToken, generateAccessToken} = require("../utils/jwt");
 const appError = require("../utils/appError");
 const httpStatusText = require('../utils/httpStatusText');
 const asyncWrapper = require("../middlewares/asyncWrapper");
-const validateMongoDbId = require('../utils/validateMongoDbId');
+// const validateMongoDbId = require('../utils/validateMongoDbId');
 
 const refreshToken=asyncWrapper(async(req,res)=>{
   const token = req.cookies.refreshToken;
@@ -120,7 +120,7 @@ const login =asyncWrapper(async(req,res)=>{
 
 const getProfile = asyncWrapper(async (req, res) => {
   const id = req.user.userId;
-  validateMongoDbId(id);
+//   validateMongoDbId(id);
 
   const user = await User.findById(id);
   if (!user) throw appError.create("User not found", 404);
@@ -139,7 +139,7 @@ const getProfile = asyncWrapper(async (req, res) => {
 
 const updateProfile = asyncWrapper(async(req,res)=>{
     const id = req.user.userId;
-    validateMongoDbId(id);
+    // validateMongoDbId(id);
     const user = await User.findById(id);
     if (!user) throw appError.create("User not found", 404);
 

@@ -1,7 +1,7 @@
 const asyncWrapper = require('../middlewares/asyncWrapper');
 const appError = require('../utils/appError');
 const Audio = require('../models/audio.model');
-const validateMongoDbId = require('../utils/validateMongoDbId');
+// const validateMongoDbId = require('../utils/validateMongoDbId');
 const httpStatusText = require('../utils/httpStatusText');
 
 const fs = require('fs');
@@ -63,7 +63,7 @@ const getMyAudios = asyncWrapper(async(req,res)=>{
 
 const streamAudio = asyncWrapper(async (req, res) => {
   const id = req.params.id
-  validateMongoDbId(id);
+  // validateMongoDbId(id);
   const audio = await Audio.findById(id);
 
   if (!audio || (audio.isPrivate && audio.user.toString() !== req.user.userId)) {
@@ -121,7 +121,7 @@ const streamAudio = asyncWrapper(async (req, res) => {
 
 const updateAudio = asyncWrapper(async (req, res) => {
   const { id } = req.params;
-  validateMongoDbId(id);
+  // validateMongoDbId(id);
 
   const { title, genre, isPrivate } = req.body;
 
@@ -172,7 +172,7 @@ const updateAudio = asyncWrapper(async (req, res) => {
 
 const incrementPlayCount = asyncWrapper(async (req, res) => {
   const { id } = req.params;
-  validateMongoDbId(id);
+  // validateMongoDbId(id);
 
   const audio = await Audio.findById(id);
   if (!audio) {
@@ -197,7 +197,7 @@ const incrementPlayCount = asyncWrapper(async (req, res) => {
 
 const deleteAudio = asyncWrapper(async (req, res) => {
   const id = req.params.id;
-  validateMongoDbId(id);
+  // validateMongoDbId(id);
 
   // 1. Fetch the audio first
   const audio = await Audio.findById(id);
