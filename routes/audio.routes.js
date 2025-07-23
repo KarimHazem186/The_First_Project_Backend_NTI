@@ -45,7 +45,7 @@ router.route('/:id')
     ]),
     //   ensureFilesExist, // Optional: only if required to always upload files
     updateAudioValidation, // Optional: you can create a separate update validator
-    validateRequest,
+    // validateRequest,
     updateAudio
     )
     .delete( 
