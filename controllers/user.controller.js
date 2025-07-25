@@ -5,7 +5,7 @@ const {generateRefreshToken, generateAccessToken} = require("../utils/jwt");
 const appError = require("../utils/appError");
 const httpStatusText = require('../utils/httpStatusText');
 const asyncWrapper = require("../middlewares/asyncWrapper");
-// const validateMongoDbId = require('../utils/validateMongoDbId');
+const validateMongoDbId = require('../utils/validateMongoDbId');
 
 const refreshToken=asyncWrapper(async(req,res)=>{
   const token = req.cookies.refreshToken;
@@ -120,7 +120,7 @@ const login =asyncWrapper(async(req,res)=>{
 
 const getProfile = asyncWrapper(async (req, res) => {
   const id = req.user.userId;
-//   validateMongoDbId(id);
+  validateMongoDbId(id);
 
   const user = await User.findById(id);
   if (!user) throw appError.create("User not found", 404);
@@ -139,7 +139,7 @@ const getProfile = asyncWrapper(async (req, res) => {
 
 const updateProfile = asyncWrapper(async(req,res)=>{
     const id = req.user.userId;
-    // validateMongoDbId(id);
+    validateMongoDbId(id);
     const user = await User.findById(id);
     if (!user) throw appError.create("User not found", 404);
 
@@ -172,10 +172,145 @@ const updateProfile = asyncWrapper(async(req,res)=>{
 })
 
 
+// const followUser =asyncWrapper(async(req,res)=>{
+//   const {userId} = req.params;
+//   const currentUser = await User.findById(req.user.userId);
+  
+//   if (currentUser.following.includes(userId)) {
+//     throw appError.create('You already follow this user.',400,httpStatusText.FAIL)
+//   }
+//   currentUser.following.push(userId);
+//   await currentUser.save();
+
+//   // await User.findByIdAndUpdate(userId,{$inc:{followers:1}});
+
+//    await User.findByIdAndUpdate(userId, { $push: { followers: req.userId } });
+//     res.status(200).json({
+//       success: httpStatusText.SUCCESS,
+//       message: 'You are now following this user.',
+//     });
+// })
+
+// ORRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+
+const followUser =asyncWrapper(async(req,res)=>{
+  const currentUserId = req.user.userId;
+  const targetUserId = req.params.id;
+
+  console.log(currentUserId," ",targetUserId)
+
+  if(currentUserId===targetUserId){
+    throw appError.create('You cannot follow yourself.',400,httpStatusText.FAIL)
+  }
+
+  const currentUser = await User.findById(currentUserId);
+  const targetUser = await User.findById(targetUserId);
+
+  if(!targetUser){
+    throw appError.create('User not found.',400,httpStatusText.FAIL)
+  }
+
+  if(currentUser.following.includes(targetUserId)){
+    throw appError.create('You already follow this user.',400,httpStatusText.FAIL)
+  }
+
+// Add user to following/followers array
+//   await User.findByIdAndUpdate(currentUserId,{$push:{following:targetUserId}});
+//   await User.findByIdAndUpdate(targetUserId,{$push:{followers:targetUserId}});
+
+  /// ORRRRRRRRRR
+
+// Add user to following/followers array
+ currentUser.following.push(targetUserId);
+ targetUser.followers.push(currentUserId);
+
+
+  await currentUser.save();
+  await targetUser.save();
+
+// Increment counters
+//   await User.findByIdAndUpdate(currentUserId, { $inc: { followingCount: 1 } });
+//   await User.findByIdAndUpdate(targetUserId, { $inc: { followersCount: 1 } });
+
+
+  res.status(200).json({
+    success: httpStatusText.SUCCESS,
+    message: 'You are now following this user.',
+  })
+})
+
+// unfollow user
+const unfollowUser =asyncWrapper(async(req,res)=>{
+    const currentUserId = req.user.userId;
+    const targetUserId = req.params.id;
+    console.log(currentUserId," ",targetUserId)
+    if(currentUserId===targetUserId){
+        throw appError.create('You cannot unfollow yourself.',400,httpStatusText.FAIL)
+    }
+    const currentUser = await User.findById(currentUserId)
+    const targetUser = await User.findById(targetUserId)
+
+    if(!targetUser){
+        throw appError.create('User not found.',400,httpStatusText.FAIL)
+    }
+
+    // currentUser.following = currentUser.following.filter(id => id !== targetUserId);
+    // targetUser.followers = targetUser.followers.filter(id => id !== currentUserId);
+
+   currentUser.following = currentUser.following.filter(id => id.toString() !== targetUserId);
+   targetUser.followers = targetUser.followers.filter(id => id.toString() !== currentUserId);
+
+    await currentUser.save();
+    await targetUser.save();
+
+  // Decrement counters
+//   await User.findByIdAndUpdate(currentUserId, { $inc: { followingCount: -1 } });
+//   await User.findByIdAndUpdate(targetUserId, { $inc: { followersCount: -1 } });
+
+
+    res.status(200).json({ message: 'User unfollowed successfully.'});
+
+
+})
+
+
+// get followers
+const getFollowers = asyncWrapper(async (req, res) => {
+    const userId = req.params.id;
+    const user = await User.findById(userId).populate('followers','name email')
+    if(!user){
+        throw appError.create('User not found.',400,httpStatusText.FAIL)
+    }
+
+    const isSelf = req.user?.userId === userId;
+
+    res.status(200).json( { success: httpStatusText.SUCCESS,count:user.followers.length , message: isSelf ? 'Your followers:' : 'User followers:',followers:user.followers});
+})
+
+// get following
+const getFollowing = asyncWrapper(async (req, res) => {
+    const userId = req.params.id;
+    const user = await User.findById(userId).populate('following','name email')
+    if(!user){
+        throw appError.create('User not found.',400,httpStatusText.FAIL)
+    }
+    
+    const isSelf = req.user?.userId === userId;
+
+
+    res.status(200).json( { success: httpStatusText.SUCCESS,count:user.following.length,message: isSelf ? 'People you follow:' : 'User following:',following:user.following });
+})
+
+
+
 module.exports={
     refreshToken,
     signup,
     login,
     getProfile,
     updateProfile,
+    followUser,
+    unfollowUser,
+    getFollowers,
+    getFollowing,
 }

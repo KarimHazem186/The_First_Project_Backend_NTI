@@ -3,7 +3,7 @@ const router = express.Router();
 const upload = require('../config/multer.config/multer.uploads');
 const { createAudioValidation } = require('../validators/createAudioValidation');
 const { updateAudioValidation } = require('../validators/updateAudioValidation');
-const { createAudio,updateAudio,incrementPlayCount, getAllPublicAudio, getMyAudios, streamAudio, deleteAudio } = require('../controllers/audio.controller');
+const { createAudio,updateAudio,incrementPlayCount, getAllPublicAudio, getMyAudios, streamAudio, deleteAudio, searchAudio, likeAudio, commentAudio } = require('../controllers/audio.controller');
 const validateRequest = require('../middlewares/validateRequest'); 
 const {authenticate} = require('../middlewares/authMiddleware'); 
 const ensureFilesExist = require('../middlewares/ensureFilesExist');
@@ -56,8 +56,16 @@ router.route('/:id')
     );
 
 
+router.get('/search',searchAudio)    
 
 router.patch('/:id/play',idValidator,validateRequest, incrementPlayCount);
+
+// Like audio
+router.post('/:id/like', authenticate, likeAudio);
+
+
+// Add comment to audio
+router.post('/:id/comment', authenticate, commentAudio);
 
 
 

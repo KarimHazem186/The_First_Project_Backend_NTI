@@ -1,11 +1,12 @@
 const asyncWrapper = require('../middlewares/asyncWrapper');
 const appError = require('../utils/appError');
 const Audio = require('../models/audio.model');
-// const validateMongoDbId = require('../utils/validateMongoDbId');
+const validateMongoDbId = require('../utils/validateMongoDbId');
 const httpStatusText = require('../utils/httpStatusText');
 
 const fs = require('fs');
 const path = require('path');
+const User = require('../models/user.model');
 
 const createAudio = asyncWrapper(async (req, res) => {
   const { title, genre, isPrivate } = req.body;
@@ -63,7 +64,7 @@ const getMyAudios = asyncWrapper(async(req,res)=>{
 
 const streamAudio = asyncWrapper(async (req, res) => {
   const id = req.params.id
-  // validateMongoDbId(id);
+  validateMongoDbId(id);
   const audio = await Audio.findById(id);
 
   if (!audio || (audio.isPrivate && audio.user.toString() !== req.user.userId)) {
@@ -121,7 +122,7 @@ const streamAudio = asyncWrapper(async (req, res) => {
 
 const updateAudio = asyncWrapper(async (req, res) => {
   const { id } = req.params;
-  // validateMongoDbId(id);
+  validateMongoDbId(id);
 
   const { title, genre, isPrivate } = req.body;
 
@@ -168,11 +169,41 @@ const updateAudio = asyncWrapper(async (req, res) => {
 });
 
 
+const searchAudio = asyncWrapper(async(req,res)=>{
+  const {title,genre} = req.query;
+    console.log("Query Params:", req.query);
+
+  // Prevent empty search
+  if (!title && !genre) {
+    // return res.status(400).json({
+    //   success: false,
+    //   message: 'Please provide at least a title or genre to search.'
+    // });
+    throw appError.create('Please provide at least a title or genre to search.',400,httpStatusText.FAIL)
+  }
+  const query = {isPrivate:false};
+  
+  if(title) query.title = {$regex:title,$options:'i'};
+  if(genre) query.genre = genre;
+
+
+    console.log("Query Params:", query);
+
+
+  // const audios = await Audio.find(query).populate('user');
+  const audios = await Audio.find(query);
+  res.status(200).json({
+    success: httpStatusText.SUCCESS,
+    count: audios.length,
+    audios
+  });
+})
+
 
 
 const incrementPlayCount = asyncWrapper(async (req, res) => {
   const { id } = req.params;
-  // validateMongoDbId(id);
+  validateMongoDbId(id);
 
   const audio = await Audio.findById(id);
   if (!audio) {
@@ -197,7 +228,7 @@ const incrementPlayCount = asyncWrapper(async (req, res) => {
 
 const deleteAudio = asyncWrapper(async (req, res) => {
   const id = req.params.id;
-  // validateMongoDbId(id);
+  validateMongoDbId(id);
 
   // 1. Fetch the audio first
   const audio = await Audio.findById(id);
@@ -238,6 +269,87 @@ const deleteAudio = asyncWrapper(async (req, res) => {
   res.json({ status: 'deleted' });
 });
 
+const likeAudio = asyncWrapper(async(req,res)=>{
+  const audioId = req.params.id;
+  validateMongoDbId(audioId);
+  const userId = req.user.userId;
+  const audio = await Audio.findById(audioId);
+  if (!audio) {
+    throw appError.create(' Audio not found',404,httpStatusText.FAIL);
+  }
+  if (audio.likes.includes(userId)) {
+    await Audio.updateOne({ _id: audioId }, { $pull: { likes: userId } });
+    res.json({ status: 'unliked' });
+  }else {
+      await Audio.updateOne({ _id: audioId }, { $push: { likes: userId} });
+    res.json({ status: 'liked' });
+  }       
+})
+
+// const likeAudio = asyncWrapper(async (req, res) => {
+//   const audio = await Audio.findById(req.params.id);
+
+//   if (audio.likes.includes(req.user.userId)) {
+//     // return res.status(400).json({ message: 'Already liked' });
+//     throw appError.create('Already liked', 400, httpStatusText.FAIL);
+//   }
+
+//   audio.likes.push(req.user.userId);
+//   await audio.save();
+
+//   res.status(200).json({ message: 'Liked' });
+// });
+
+// const disLikeAudio = asyncWrapper(async (req, res) => {
+//   const audio = await Audio.findById(req.params.id);
+//   if (!audio) {
+//     throw appError.create('Audio not found', 404, httpStatusText.FAIL);
+//   }
+//   if (!audio.likes.includes(req.user.userId)) {
+//     // return res.status(400).json({ message: 'Already disliked' });
+//     throw appError.create('Already disliked', 400, httpStatusText.FAIL);
+//   }
+//   audio.likes.pull(req.user.userId);
+//   await audio.save();
+//   res.status(200).json({ message: 'Disliked' });
+// });
+
+const commentAudio = asyncWrapper(async (req, res) => {
+  const audioId = req.params.id;
+  
+  validateMongoDbId(audioId);
+  
+  const comment = req.body.text;
+
+  const userId = req.user.userId;
+  const audio = await Audio.findById(audioId)
+      // .populate('comments.user', 'name email');
+  if (!audio) {
+    throw appError.create('Audio not found', 404, httpStatusText.FAIL);
+  }
+
+
+   if (!comment || comment.trim() === '') {
+    throw appError.create('Comment text is required', 400, httpStatusText.FAIL);
+  }
+
+
+  const newComment = {
+    user: userId,
+    text: comment,
+    createdAt: new Date()
+  };
+
+  audio.comments.push(newComment);
+  await audio.save();
+
+  res.status(200).json({
+    success: httpStatusText.SUCCESS,
+    message: 'Comment added successfully',
+    comment: newComment
+  });
+});
+
 
 module.exports = {
   createAudio,
@@ -245,6 +357,10 @@ module.exports = {
   getMyAudios,
   streamAudio,
   updateAudio,
+  searchAudio,
   deleteAudio,
-  incrementPlayCount
+  incrementPlayCount,
+  likeAudio,
+  // disLikeAudio,
+  commentAudio
 }

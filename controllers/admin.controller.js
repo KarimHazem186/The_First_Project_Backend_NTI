@@ -1,7 +1,7 @@
 const Audio = require('../models/audio.model');
 const fs = require('fs');
 const path = require('path');
-// const validateMongoDbId = require('../utils/validateMongoDbId');
+const validateMongoDbId = require('../utils/validateMongoDbId');
 const asyncWrapper = require('../middlewares/asyncWrapper');
 const appError = require('../utils/appError');
 const httpStatusText = require('../utils/httpStatusText');
@@ -21,7 +21,7 @@ const getAllAudios = asyncWrapper(async (req, res) => {
 const deleteAudioById =asyncWrapper(async (req, res) => {
     const { id } = req.params;
 
-    // validateMongoDbId(id)
+    validateMongoDbId(id)
 
     const audio = await Audio.findById(id);
     if (!audio) {
