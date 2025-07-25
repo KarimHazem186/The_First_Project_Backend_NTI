@@ -1,5 +1,5 @@
 const express = require("express");
-const { refreshToken, signup,login,getProfile,updateProfile, followUser, unfollowUser, getFollowers, getFollowing } = require("../controllers/user.controller");
+const { refreshToken, signup,login,getProfile,updateProfile, followUser, unfollowUser, getFollowers, getFollowing, getEditHistory } = require("../controllers/user.controller");
 const { authenticate } = require("../middlewares/authMiddleware");
 const validateRegister = require("../validators/validateRegister");
 const validateLogin = require("../validators/validateLogin");
@@ -29,6 +29,9 @@ router.get('/:id/followers',authenticate ,getFollowers);
 // // Get following of a user
 router.get('/:id/following',authenticate ,getFollowing);
   
+
+router.get('/:id/edit-history', authenticate, getEditHistory);
+
 
 
 module.exports=router

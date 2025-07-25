@@ -16,6 +16,7 @@ const appError = require('./utils/appError.js')
 const userRoutes = require('./routes/user.routes.js');
 const audioRoutes = require('./routes/audio.routes');
 const adminRoutes = require('./routes/admin.routes');
+const feedRoutes = require('./routes/feed.routes')
 const morgan = require('morgan');
 
 
@@ -87,6 +88,8 @@ app.use("/api/audio", audioRoutes);
 
 app.use("/api/admin",adminRoutes );
 
+
+app.use('/api/feed', feedRoutes);
 
 
 

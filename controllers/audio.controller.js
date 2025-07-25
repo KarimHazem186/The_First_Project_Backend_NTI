@@ -46,14 +46,41 @@ const createAudio = asyncWrapper(async (req, res) => {
 });
 
 
-const getAllPublicAudio = asyncWrapper(async(req,res)=>{
-    const audios = await Audio.find({ isPrivate: false }).populate('user', 'name -_id');
-    if(!audios) throw appError.create('Not Found',404)
-    res.json({
-      success: httpStatusText.SUCCESS,
-      audios,
-    })
+// const getAllPublicAudio = asyncWrapper(async(req,res)=>{
+//     const audios = await Audio.find({ isPrivate: false }).populate('user', 'name -_id');
+//     if(!audios) throw appError.create('Not Found',404)
+//     res.json({
+//       success: httpStatusText.SUCCESS,
+//       audios,
+//     })
+// })
+
+const getPublicAudio = asyncWrapper(async(req,res)=>{
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+  const [audios,total] = await Promise.all([
+    Audio.find({ isPrivate: false }).populate('user', 'name -_id')
+    .skip(skip)
+    .limit(limit),
+    Audio.countDocuments({ isPrivate: false }) 
+  ])
+   if (!audios || audios.length === 0) {
+    throw appError.create('No public audios found', 404, httpStatusText.FAIL);
+  }
+  res.status(200).json({
+    success: httpStatusText.SUCCESS,
+    page,
+    limit,
+    totalPages:Math.ceil(total/limit),
+    totalItems:total,
+    count:audios.length,
+    audios
+  })
 })
+
+
+
 
 const getMyAudios = asyncWrapper(async(req,res)=>{
   const audios = await Audio.find({ user: req.user.userId });
@@ -201,6 +228,8 @@ const searchAudio = asyncWrapper(async(req,res)=>{
 
 
 
+
+
 const incrementPlayCount = asyncWrapper(async (req, res) => {
   const { id } = req.params;
   validateMongoDbId(id);
@@ -217,11 +246,23 @@ const incrementPlayCount = asyncWrapper(async (req, res) => {
 
   // await Audio.findByIdAndUpdate(id, { $inc: { playCount: 1 } }, { new: true });
 
+  // ORRRRRRRRRRR
+
+  // const updatedAudio = await Audio.findByIdAndUpdate(
+  //   id,
+  //   { $inc: { playCount: 1 } },
+  //   { new: true } // returns updated doc
+  // );
+  // if (!updatedAudio) throw appError.create('Audio not found', 404);
+
 
   res.status(200).json({
     status: 'success',
     message: 'Play count incremented',
     playCount: audio.playCount,
+
+    // playCount: updatedAudio.playCount,
+
   });
 });
 
@@ -314,6 +355,49 @@ const likeAudio = asyncWrapper(async(req,res)=>{
 //   res.status(200).json({ message: 'Disliked' });
 // });
 
+
+const likeAudios = asyncWrapper(async (req, res) => {
+  const userIdStr = req.user.userId.toString();
+  const audio = await Audio.findById(req.params.id);
+  if (!audio) return res.status(404).json({ message: 'Audio not found' });
+
+  // const alreadyLiked = audio.likes.includes(req.user.userId);
+  
+  const alreadyLiked = audio.likes.some(id => id.toString() === userIdStr);
+
+  if (alreadyLiked) {
+    return res.status(400).json({ message: 'Already liked' });
+  }
+
+  audio.likes.push(req.user.userId);
+  await audio.save();
+  res.json({ message: 'Liked' });
+});
+
+const unlikeAudios = asyncWrapper(async (req, res) => {
+  const userIdStr = req.user.userId.toString();
+  const audio = await Audio.findById(req.params.id);
+  if (!audio) return res.status(404).json({ message: 'Audio not found' });
+
+  
+  // audio.likes = audio.likes.filter(id => id.toString() !== req.user.userId);
+  audio.likes = audio.likes.filter(id => id.toString() !== userIdStr);
+
+
+  await audio.save();
+  res.json({ message: 'Unliked' });
+});
+
+const getAudioLikes = asyncWrapper(async (req, res) => {
+  const audio = await Audio.findById(req.params.id);
+  if (!audio) return res.status(404).json({ message: 'Audio not found' });
+
+  const liked = audio.likes.includes(req.user.userId);
+  res.json({ totalLikes: audio.likes.length, liked });
+});
+
+
+
 const commentAudio = asyncWrapper(async (req, res) => {
   const audioId = req.params.id;
   
@@ -350,10 +434,52 @@ const commentAudio = asyncWrapper(async (req, res) => {
   });
 });
 
+const getAudioComments = asyncWrapper(async (req, res) => {
+  const audioId = req.params.id;
+  validateMongoDbId(audioId);
+  const audio = await Audio.findById(audioId).populate('comments.user','name email -_id')
+  if (!audio) {
+    throw appError.create('Audio not found', 404, httpStatusText.FAIL); 
+  }
+    res.status(200).json({
+      success: httpStatusText.SUCCESS,
+      message: 'Comments retrieved successfully',
+      count:audio.comments.length,
+     comments: audio.comments
+    });
+
+});
+/////////////////////////////////////////
+function buildAudioSearchQuery({ title, genre }) {
+  const query = { isPrivate: false };
+
+  if (typeof title === 'string' && title.trim()) {
+    query.title = { $regex: title.trim(), $options: 'i' };
+  }
+
+  if (typeof genre === 'string' && genre.trim()) {
+    query.genre = { $regex: genre.trim(), $options: 'i' };
+  }
+
+  return query;
+}
+
+const getPublicAudios = asyncWrapper(async (req, res) => {
+  const query = buildAudioSearchQuery(req.query);
+  const audios = await Audio.find(query).populate('user', 'name');
+
+  res.status(200).json({
+    success: true,
+    count: audios.length,
+    audios
+  });
+});
+
+
 
 module.exports = {
   createAudio,
-  getAllPublicAudio,
+  // getAllPublicAudio,
   getMyAudios,
   streamAudio,
   updateAudio,
@@ -362,5 +488,11 @@ module.exports = {
   incrementPlayCount,
   likeAudio,
   // disLikeAudio,
-  commentAudio
+  commentAudio,
+  getAudioComments,
+  getPublicAudio,
+  getPublicAudios,
+  likeAudios,
+  unlikeAudios,
+  getAudioLikes,
 }

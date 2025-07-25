@@ -67,6 +67,13 @@ const userSchema = new mongoose.Schema(
     //   type: Number,
     //   default: 0,
     // },
+    editHistory: [{
+        field: String,
+        oldValue: String,
+        newValue: String,
+        changedAt: { type: Date, default: Date.now }
+    }],
+
 
     refreshToken: String,
   },

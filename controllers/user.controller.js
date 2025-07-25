@@ -137,39 +137,39 @@ const getProfile = asyncWrapper(async (req, res) => {
 });
 
 
-const updateProfile = asyncWrapper(async(req,res)=>{
-    const id = req.user.userId;
-    validateMongoDbId(id);
-    const user = await User.findById(id);
-    if (!user) throw appError.create("User not found", 404);
+// const updateProfile = asyncWrapper(async(req,res)=>{
+//     const id = req.user.userId;
+//     validateMongoDbId(id);
+//     const user = await User.findById(id);
+//     if (!user) throw appError.create("User not found", 404);
 
-    const {name} =req.body;
+//     const {name} =req.body;
 
-    if(!name && !req.file) {
-        throw appError.create("Please provide name or profile image to update", 400);
-    }
+//     if(!name && !req.file) {
+//         throw appError.create("Please provide name or profile image to update", 400);
+//     }
 
-    // Update name if provided
-    if (name) user.name = name;
+//     // Update name if provided
+//     if (name) user.name = name;
 
-    // Update profile image if uploaded
-    if (req.file) {
-        user.profileImg = req.file?.filename; // or req.file.path if storing full path
-    }
+//     // Update profile image if uploaded
+//     if (req.file) {
+//         user.profileImg = req.file?.filename; // or req.file.path if storing full path
+//     }
 
-    await user.save();
+//     await user.save();
 
-    res.status(200).json({
-        status: httpStatusText.SUCCESS,
-        message: "Profile updated successfully",
-        user: {
-            name: user.name,
-            // email: user.email,
-            profileImage: user.profileImg,
-        },
-  });
+//     res.status(200).json({
+//         status: httpStatusText.SUCCESS,
+//         message: "Profile updated successfully",
+//         user: {
+//             name: user.name,
+//             // email: user.email,
+//             profileImage: user.profileImg,
+//         },
+//   });
 
-})
+// })
 
 
 // const followUser =asyncWrapper(async(req,res)=>{
@@ -192,6 +192,68 @@ const updateProfile = asyncWrapper(async(req,res)=>{
 // })
 
 // ORRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+
+const updateProfile = asyncWrapper(async(req,res)=>{
+    const userId = req.user.userId;
+    const {name,email,profileImg} = req.body
+
+    const user = await User.findById(userId);
+    if(!user){
+        throw appError.create('User not found',404,httpStatusText.FAIL)
+    }
+
+    if(name&&name!==user.name){
+        user.editHistory.push({
+            field:'name',
+            oldValue:user.name,
+            newValue:name.toLowerCase(),
+            changedAt: new Date()
+        });
+        user.name=name
+    }
+    if(email&&email!==user.email){
+        user.editHistory.push({
+            field:'email',
+            oldValue:user.email,
+            newValue:email.toLowerCase(),
+            changedAt: new Date()
+        });
+        user.email=email
+    }
+    if(profileImg&&profileImg!==user.profileImg){
+        user.editHistory.push({
+            field:'profileImg',
+            oldValue:user.profileImg,
+            newValue:profileImg,
+            changedAt: new Date()
+        });
+        user.profileImg=profileImg
+    }
+    await user.save();
+    res.status(200).json({
+        success:httpStatusText.SUCCESS,
+        message:'Profile updated successfully',
+        user
+    });
+})
+
+
+const getEditHistory = asyncWrapper(async (req, res) => {
+  const userId = req.params.id;
+
+  const user = await User.findById(userId).select('editHistory name');
+  if (!user) {
+    throw appError.create('User not found', 404, httpStatusText.FAIL);
+  }
+
+  res.status(200).json({
+    success: httpStatusText.SUCCESS,
+    user: user.name,
+    count: user.editHistory.length,
+    history: user.editHistory
+  });
+});
+
 
 const followUser =asyncWrapper(async(req,res)=>{
   const currentUserId = req.user.userId;
@@ -313,4 +375,5 @@ module.exports={
     unfollowUser,
     getFollowers,
     getFollowing,
+    getEditHistory,
 }
